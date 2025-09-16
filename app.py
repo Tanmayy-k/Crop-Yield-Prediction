@@ -11,6 +11,9 @@ st.set_page_config(page_title="Crop Yield Prediction", layout="wide")
 st.title("🌾 AI-Powered Crop Yield Prediction (Maharashtra)")
 st.write("This app predicts **crop yield** using an advanced XGBoost regression model.")
 
+# ---------------------------
+# Load Pretrained Model
+# ---------------------------
 try:
     model = joblib.load("model.pkl")
     model_loaded = True
@@ -18,6 +21,9 @@ except:
     st.error("❌ Model file not found! Please place 'model.pkl' in the project folder.")
     model_loaded = False
 
+# ---------------------------
+# Input Section
+# ---------------------------
 st.header("📥 Input Parameters")
 
 col1, col2 = st.columns(2)
@@ -36,10 +42,14 @@ with col2:
     fertilizer = st.number_input("Fertilizer Usage (kg/ha)", min_value=0, max_value=500, value=120)
     irrigation = st.slider("Irrigation Frequency (per week)", 0, 7, 2)
 
+# Prepare input
 input_data = pd.DataFrame([[
-    year, area, rainfall, temperature, nitrogen, phosphorus, potassium, fertilizer, irrigation, 1
+    year, area, rainfall, temperature, nitrogen, phosphorus, potassium, fertilizer, irrigation, 1  # crop dummy
 ]], columns=["Year","Area","Rainfall","Temperature","N","P","K","Fertilizer","Irrigation","Crop"])
 
+# ---------------------------
+# Prediction
+# ---------------------------
 if st.button("🔍 Predict Yield") and model_loaded:
     prediction = model.predict(input_data)[0]
 
@@ -54,24 +64,37 @@ if st.button("🔍 Predict Yield") and model_loaded:
     """)
     st.info("💡 Recommendation: Maintain irrigation frequency and optimize Nitrogen use for better yield.")
 
+    # ---------------------------
+    # Show Model Metrics
+    # ---------------------------
     st.subheader("📊 Model Performance (XGBoost)")
+    # Dummy metrics (replace with real values from Colab test set later)
     y_true = np.array([20, 30, 40, 50, 60])
     y_pred = np.array([22, 29, 42, 48, 61])
-    rmse = mean_squared_error(y_true, y_pred, squared=False)
+
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = np.sqrt(mse)
     r2 = r2_score(y_true, y_pred)
 
     st.metric("RMSE (Root Mean Squared Error)", f"{rmse:.2f}")
     st.metric("R² Score", f"{r2:.2f}")
+    st.caption("👉 Lower RMSE = lower error, Higher R² = better accuracy.")
 
+    # ---------------------------
+    # Feature Importance
+    # ---------------------------
     st.subheader("🔑 Feature Importance")
     fig, ax = plt.subplots(figsize=(8,4))
     xgb.plot_importance(model, importance_type='gain', ax=ax)
     st.pyplot(fig)
 
+    # ---------------------------
+    # Why XGBoost
+    # ---------------------------
     st.subheader("⚡ Why XGBoost?")
     st.markdown("""
     - Handles **non-linear relationships** better than Linear Regression.  
-    - Can work with **categorical + numerical features** efficiently.  
+    - Works with **categorical + numerical features** efficiently.  
     - Provides **feature importance** to explain which factors drive yield.  
     - Achieves **lower error (RMSE)** and **higher accuracy (R²)** compared to baseline models.
     """)
